@@ -721,7 +721,7 @@ const CentralCompras = () => {
     };
 
     return (
-      <div id="dashboard" className="page active">
+      <div id="dashboard" className={`page ${currentPage === 'dashboard' ? 'active' : ''}`}>
         <div className="page-header">
           <h1>Dashboard</h1>
           <p>Bem-vindo, {currentUser?.nome || 'Usuário'}</p>
@@ -759,7 +759,7 @@ const CentralCompras = () => {
   };
 
   const renderLojas = () => (
-    <div id="lojas" className="page">
+    <div id="lojas" className={`page ${currentPage === 'lojas' ? 'active' : ''}`}>
       <div className="page-header">
         <h1>Lojas</h1>
         <p>Gerencie as lojas cadastradas</p>
@@ -824,7 +824,7 @@ const CentralCompras = () => {
   );
 
   const renderFornecedores = () => (
-    <div id="fornecedores" className="page">
+    <div id="fornecedores" className={`page ${currentPage === 'fornecedores' ? 'active' : ''}`}>
       <div className="page-header">
         <h1>Fornecedores</h1>
         <p>Gerencie os fornecedores cadastrados</p>
@@ -885,7 +885,7 @@ const CentralCompras = () => {
   );
 
   const renderProdutos = () => (
-    <div id="produtos" className="page">
+    <div id="produtos" className={`page ${currentPage === 'produtos' ? 'active' : ''}`}>
       <div className="page-header">
         <h1>Produtos</h1>
         <p>Gerencie o catálogo de produtos</p>
@@ -948,7 +948,7 @@ const CentralCompras = () => {
   );
 
   const renderCampanhas = () => (
-    <div id="campanhas" className="page">
+    <div id="campanhas" className={`page ${currentPage === 'campanhas' ? 'active' : ''}`}>
       <div className="page-header">
         <h1>Campanhas</h1>
         <p>Gerencie campanhas promocionais</p>
@@ -1023,7 +1023,7 @@ const CentralCompras = () => {
   );
 
   const renderCondicoes = () => (
-    <div id="condicoes" className="page">
+    <div id="condicoes" className={`page ${currentPage === 'condicoes' ? 'active' : ''}`}>
       <div className="page-header">
         <h1>Condições por Estado</h1>
         <p>Configure as condições comerciais por estado</p>
@@ -1084,7 +1084,7 @@ const CentralCompras = () => {
     const totalCarrinho = carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
     
     return (
-      <div id="realizarPedido" className="page">
+      <div id="realizarPedido" className={`page ${currentPage === 'realizarPedido' ? 'active' : ''}`}>
         <div className="page-header">
           <h1>Realizar Pedido</h1>
           <p>Selecione produtos e finalize seu pedido</p>
@@ -1196,7 +1196,7 @@ const CentralCompras = () => {
     };
 
     return (
-      <div id="meusPedidos" className="page">
+      <div id="meusPedidos" className={`page ${currentPage === 'meusPedidos' ? 'active' : ''}`}>
         <div className="page-header">
           <h1>Meus Pedidos</h1>
           <p>Acompanhe seus pedidos</p>
