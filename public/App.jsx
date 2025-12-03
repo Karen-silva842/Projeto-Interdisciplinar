@@ -45,9 +45,9 @@ const apiRequest = async (endpoint, options = {}) => {
 
 // ============== APIS ==============
 const AuthAPI = {
-  login: (usuario, senha, tipo) => apiRequest('/auth/login', {
+  login: (usuario, senha, tipo) => apiRequest('/usuarios/login', {
     method: 'POST',
-    body: JSON.stringify({ usuario, senha, tipo })
+    body: JSON.stringify({ email: usuario, senha, tipo })
   })
 };
 

@@ -1,7 +1,8 @@
 const Usuario = require('../models/usuario');
 const Loja = require('../models/loja');
 const Fornecedor = require('../models/fornecedor');
-const { verifyPassword, generateToken } = require('../utils/gerarCredenciais');
+const { verifyPassword } = require('../utils/gerarCredenciais');
+const { gerarToken } = require('../utils/jwt');
 
 class UsuariosController {
   static async login(req, res) {
@@ -19,7 +20,7 @@ class UsuariosController {
       if (usuario.tipo === 'loja') perfil = await Loja.buscarPorUsuarioId(usuario.id);
       else if (usuario.tipo === 'fornecedor') perfil = await Fornecedor.buscarPorUsuarioId(usuario.id);
 
-      const token = generateToken({
+      const token = gerarToken({
         id: usuario.id,
         email: usuario.email,
         tipo: usuario.tipo,
