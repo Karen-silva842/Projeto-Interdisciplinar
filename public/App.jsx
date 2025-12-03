@@ -251,14 +251,15 @@ const CentralCompras = () => {
     try {
       const response = await AuthAPI.login(usuario, senha, type);
       
-      setCurrentUser(response.user);
+      const { data: { token, usuario: authUser} } = response
+      setCurrentUser(authUser);
       setCurrentUserType(type);
       setCurrentScreen('main');
       setCurrentPage('dashboard');
       
       // Salvar no localStorage
-      localStorage.setItem('user', JSON.stringify(response.user));
-      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(authUser));
+      localStorage.setItem('token', token);
       localStorage.setItem('userType', type);
       
       // Carregar dados iniciais
@@ -590,7 +591,6 @@ const CentralCompras = () => {
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     const savedType = localStorage.getItem('userType');
-    
     if (savedUser && savedType) {
       const userData = JSON.parse(savedUser);
       setCurrentUser(userData);
