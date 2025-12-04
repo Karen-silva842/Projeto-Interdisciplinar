@@ -5,7 +5,6 @@ require('dotenv').config();
 
 const pool = require('./src/db');
 
-// Testar PostgreSQL
 (async () => {
   try {
     const res = await pool.query("SELECT NOW()");
