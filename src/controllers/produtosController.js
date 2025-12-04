@@ -12,7 +12,14 @@ class ProdutosController {
       } else if (fornecedor_id) {
         produtos = await Produto.buscarPorFornecedor(fornecedor_id);
       } else {
-        produtos = [];
+        produtos = await Produto.buscarTodos({ pagina, limite });
+        produtos = produtos.map((produto) => ({
+          ...produto,
+          fornecedor: {
+            id_fornecedor: produto.fornecedor_id,
+            nome_fornecedor: produto.nome_fornecedor
+          }
+        }))
       }
 
       res.json({

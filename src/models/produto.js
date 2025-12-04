@@ -6,21 +6,20 @@ class Produto {
       nome,
       descricao,
       preco,
-      sku,
+      quantidade_estoque,
       fornecedor_id,
-      categoria_id,
-      imagem_url
+      status
     } = produtoData;
 
     const query = `
       INSERT INTO produtos (
-        nome, descricao, preco, sku, fornecedor_id, categoria_id, imagem_url, criado_em
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        nome, descricao, preco, quantidade_estoque, fornecedor_id, status
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `;
 
     const result = await db.query(query, [
-      nome, descricao, preco, sku, fornecedor_id, categoria_id, imagem_url
+      nome, descricao, preco, quantidade_estoque, fornecedor_id, status
     ]);
 
     return result.rows[0];
@@ -35,6 +34,18 @@ class Produto {
       ORDER BY p.nome
     `;
     const result = await db.query(query, [fornecedorId]);
+    return result.rows;
+  }
+
+  static async buscarTodos({ pagina = 1, limite = 10 }) {
+    const query = `
+      SELECT p.*, f.nome_fornecedor
+      FROM produtos p
+      JOIN fornecedores f ON p.fornecedor_id = f.id_fornecedor
+      ORDER BY p.nome
+      LIMIT $1 OFFSET $2
+    `;
+    const result = await db.query(query, [limite, (pagina - 1) * limite]);
     return result.rows;
   }
 

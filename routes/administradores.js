@@ -45,6 +45,42 @@ router.post('/lojas', AdministradoresController.cadastrarLoja);
 
 /**
  * @swagger
+ * /api/administradores/produtos:
+ *   post:
+ *     summary: Cadastrar um novo produto
+ *     tags: [Administradores]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       description: Dados do produto
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               preco:
+ *                 type: number
+ *               quantidade_estoque:
+ *                 type: number
+ *              fornecedor_id:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Produto cadastrado com sucesso
+ *       500:
+ *         description: Erro ao cadastrar produto
+ */
+router.post('/produtos', AdministradoresController.cadastrarProduto);
+
+/**
+ * @swagger
  * /api/administradores/lojas:
  *   get:
  *     summary: Listar todas as lojas

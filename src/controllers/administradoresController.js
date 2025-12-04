@@ -2,6 +2,7 @@ const Loja = require('../models/loja');
 const Fornecedor = require('../models/fornecedor');
 const Usuario = require('../models/usuario');
 const { generateCredentials, generateTempEmail } = require('../utils/gerarCredenciais');
+const Produto = require('../models/produto');
 
 class AdministradoresController {
   static async cadastrarLoja(req, res) {
@@ -29,6 +30,16 @@ class AdministradoresController {
       });
     } catch (error) {
       res.status(500).json({ success: false, message: 'Erro ao cadastrar loja', error: error.message });
+    }
+  }
+
+  static async cadastrarProduto(req, res) {
+    try {
+      const produtoData = req.body;
+      const produto = await Produto.criar(produtoData);
+      res.status(201).json({ success: true, message: 'Produto cadastrado com sucesso', data: produto });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Erro ao cadastrar produto', error: error.message });
     }
   }
 

@@ -87,7 +87,7 @@ const ProdutosAPI = {
   getAll: () => apiRequest('/produtos'),
   getById: (id) => apiRequest(`/produtos/${id}`),
   getByFornecedor: (fornecedorId) => apiRequest(`/produtos/fornecedor/${fornecedorId}`),
-  create: (data) => apiRequest('/produtos', {
+  create: (data) => apiRequest('/administradores/produtos', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
@@ -179,7 +179,7 @@ const CentralCompras = () => {
   const [formData, setFormData] = useState({
     loja: { id: '', nome: '', cnpj: '', endereco: '', responsavel: '', telefone: '', email: '' },
     fornecedor: { id: '', nome: '', categoria: '', endereco: '', telefone: '', email: '', estado: '' },
-    produto: { id: '', nome: '', fornecedorId: '', categoria: '', preco: '', estoque: '', descricao: '' },
+    produto: { id: '', nome: '', fornecedor: {}, status: '', preco: '', quantidade_estoque: '', descricao: '' },
     campanha: { id: '', nome: '', tipo: '', status: 'Ativa', valor: '', descricao: '', inicio: '', termino: '' },
     condicao: { id: '', uf: '', cashback: '', prazo: '', acrescimo: '' }
   });
@@ -402,14 +402,19 @@ const CentralCompras = () => {
       const produtoData = {
         ...formData.produto,
         preco: parseFloat(formData.produto.preco),
-        estoque: parseInt(formData.produto.estoque)
+        estoque: parseInt(formData.produto.estoque),
+        fornecedor_id: formData.produto.fornecedor.id_fornecedor
       };
       
       const response = await ProdutosAPI.create(produtoData);
-      setProdutos([...produtos, response]);
-      setModalOpen('');
-      resetForm('produto');
-      alert('Produto criado com sucesso!');
+      if (response.success) {
+        const produto = response.data;
+
+        setProdutos([...produtos, produto]);
+        setModalOpen('');
+        resetForm('produto');
+        alert('Produto criado com sucesso!');
+      }
       
     } catch (error) {
       alert('Erro ao salvar produto: ' + error.message);
@@ -737,10 +742,10 @@ const CentralCompras = () => {
             { label: 'Valor Total', value: formatCurrency(meusPedidos.reduce((s, p) => s + (p.total || 0), 0)), icon: '💰', color: '#00BCD4' }
           ];
         case 'fornecedor':
-          const pedidosFornecedor = pedidos.filter(p => p.fornecedorId === currentUser?.id);
+          const pedidosFornecedor = pedidos.filter(p => p.fornecedor?.id_fornecedor === currentUser?.id);
           return [
             { label: 'Pedidos Novos', value: pedidosFornecedor.filter(p => p.status === 'Pendente').length, icon: '📥', color: '#5B7FFF' },
-            { label: 'Produtos Cadastrados', value: produtos.filter(p => p.fornecedorId === currentUser?.id).length, icon: '📦', color: '#4CAF50' },
+            { label: 'Produtos Cadastrados', value: produtos.filter(p => p.fornecedor?.id_fornecedor === currentUser?.id).length, icon: '📦', color: '#4CAF50' },
             { label: 'Campanhas Ativas', value: campanhas.filter(c => c.status === 'Ativa').length, icon: '📢', color: '#9C27B0' },
             { label: 'Vendas do Mês', value: formatCurrency(pedidosFornecedor.filter(p => p.status === 'Aprovado').reduce((s, p) => s + (p.total || 0), 0)), icon: '💰', color: '#FF9800' }
           ];
@@ -890,7 +895,7 @@ const CentralCompras = () => {
             </tr>
           ) : (
             fornecedores.map(fornecedor => (
-              <tr key={fornecedor.id}>
+              <tr key={fornecedor.id_fornecedor}>
                 <td>{fornecedor.nome || ''}</td>
                 <td>{fornecedor.categoria || ''}</td>
                 <td>{fornecedor.endereco || ''}</td>
@@ -899,7 +904,7 @@ const CentralCompras = () => {
                   <div className="action-buttons">
                     <button className="btn-edit">Editar</button>
                     <button className="btn-delete" onClick={() => 
-                      setDeleteData({ tipo: 'fornecedor', id: fornecedor.id, nome: fornecedor.nome })
+                      setDeleteData({ tipo: 'fornecedor', id: fornecedor.id_fornecedor, nome: fornecedor.nome })
                     }>
                       Excluir
                     </button>
@@ -937,7 +942,7 @@ const CentralCompras = () => {
           <tr>
             <th>Nome</th>
             <th>Fornecedor</th>
-            <th>Categoria</th>
+            <th>Status</th>
             <th>Preço</th>
             <th>Estoque</th>
             <th>Ações</th>
@@ -952,12 +957,12 @@ const CentralCompras = () => {
             </tr>
           ) : (
             produtos.map(produto => (
-              <tr key={produto.id}>
+              <tr key={produto.id_produto}>
                 <td>{produto.nome || ''}</td>
-                <td>{produto.fornecedor || ''}</td>
-                <td>{produto.categoria || ''}</td>
+                <td>{produto.fornecedor.nome_fornecedor || ''}</td>
+                <td>{produto.status || ''}</td>
                 <td>{formatCurrency(produto.preco)}</td>
-                <td>{produto.estoque || 0}</td>
+                <td>{produto.quantidade_estoque || 0}</td>
                 <td>
                   <div className="action-buttons">
                     <button className="btn-edit">Editar</button>
@@ -1540,31 +1545,34 @@ const CentralCompras = () => {
             <div className="form-group">
               <label>Fornecedor</label>
               <select
-                value={formData.produto.fornecedorId}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  produto: { ...prev.produto, fornecedorId: e.target.value }
-                }))}
+                value={formData.produto.fornecedor}
+                onChange={(e) => setFormData(prev => {
+                  const fornecedor = fornecedores.find(f => f.id_fornecedor === e.target.value);
+                  return {
+                    ...prev,
+                    produto: { ...prev.produto, fornecedor: fornecedor }
+                  }
+                })}
                 required
               >
                 <option value="">Selecione o fornecedor</option>
                 {fornecedores.map(fornecedor => (
-                  <option key={fornecedor.id} value={fornecedor.id}>
-                    {fornecedor.nome}
+                  <option key={fornecedor.id_fornecedor} value={fornecedor.id_fornecedor}>
+                    {fornecedor.nome} | {fornecedor.id_fornecedor}
                   </option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label>Categoria</label>
+              <label>Status</label>
               <input
                 type="text"
-                value={formData.produto.categoria}
+                value={formData.produto.status}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  produto: { ...prev.produto, categoria: e.target.value }
+                  produto: { ...prev.produto, status: e.target.value }
                 }))}
-                placeholder="Categoria"
+                placeholder="Status do produto"
                 required
               />
             </div>
@@ -1588,10 +1596,10 @@ const CentralCompras = () => {
               <label>Estoque</label>
               <input
                 type="number"
-                value={formData.produto.estoque}
+                value={formData.produto.quantidade_estoque}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  produto: { ...prev.produto, estoque: e.target.value }
+                  produto: { ...prev.produto, quantidade_estoque: e.target.value }
                 }))}
                 placeholder="0"
                 required
