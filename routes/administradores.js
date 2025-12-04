@@ -69,7 +69,7 @@ router.post('/lojas', AdministradoresController.cadastrarLoja);
  *                 type: number
  *               quantidade_estoque:
  *                 type: number
- *              fornecedor_id:
+ *               fornecedor_id:
  *                 type: number
  *     responses:
  *       201:

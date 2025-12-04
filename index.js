@@ -4,7 +4,6 @@ const path = require('path');
 require('dotenv').config();
 
 const pool = require('./src/db');
-const connectMongoDB = require('./src/mongodb');
 
 // Testar PostgreSQL
 (async () => {
@@ -15,9 +14,6 @@ const connectMongoDB = require('./src/mongodb');
     console.error("Erro ao conectar ao PostgreSQL:", err.message);
   }
 })();
-
-// Conectar MongoDB
-connectMongoDB();
 
 const { swaggerUi, specs } = require('./swagger/swagger');
 
