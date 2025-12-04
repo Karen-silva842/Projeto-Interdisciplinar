@@ -70,7 +70,7 @@ const LojasAPI = {
 const FornecedoresAPI = {
   getAll: () => apiRequest('/administradores/fornecedores'),
   getById: (id) => apiRequest(`/fornecedores/${id}`),
-  create: (data) => apiRequest('/fornecedores', {
+  create: (data) => apiRequest('/administradores/fornecedores', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
@@ -178,7 +178,7 @@ const CentralCompras = () => {
   
   const [formData, setFormData] = useState({
     loja: { id: '', nome: '', cnpj: '', endereco: '', responsavel: '', telefone: '', email: '' },
-    fornecedor: { id: '', nome: '', cnpj: '', endereco: '', telefone: '', email: '' },
+    fornecedor: { id: '', nome: '', categoria: '', endereco: '', telefone: '', email: '', estado: '' },
     produto: { id: '', nome: '', fornecedorId: '', categoria: '', preco: '', estoque: '', descricao: '' },
     campanha: { id: '', nome: '', tipo: '', status: 'Ativa', valor: '', descricao: '', inicio: '', termino: '' },
     condicao: { id: '', uf: '', cashback: '', prazo: '', acrescimo: '' }
@@ -295,7 +295,12 @@ const CentralCompras = () => {
             setLojas(lojasData.data || []);
           }
           if (fornecedoresData.success) {
-            setFornecedores(fornecedoresData.data || []);
+            const reforcedFornecedores = fornecedoresData.data.map(fornecedor => ({
+              ...fornecedor,
+              nome: fornecedor.nome_fornecedor,
+              email: fornecedor.email_contato,
+            }));
+            setFornecedores(reforcedFornecedores || []);
           }
           if (produtosData.success) {
             setProdutos(produtosData.data || []);
@@ -375,11 +380,13 @@ const CentralCompras = () => {
     
     try {
       const response = await FornecedoresAPI.create(formData.fornecedor);
-      setFornecedores([...fornecedores, response]);
-      setModalOpen('');
-      resetForm('fornecedor');
-      alert('Fornecedor criado com sucesso!');
-      
+      if (response.success) {
+        const fornecedor = response.data.fornecedor;
+        setFornecedores([...fornecedores, fornecedor]);
+        setModalOpen('');
+        resetForm('fornecedor');
+        alert(`Fornecedor criado com sucesso!\nUsuario: ${response.data.credenciais.email}\nSenha: ${response.data.credenciais.senha}`);
+      }
     } catch (error) {
       alert('Erro ao salvar fornecedor: ' + error.message);
     } finally {
@@ -618,7 +625,7 @@ const CentralCompras = () => {
       setCurrentUser(userData);
       setCurrentUserType(savedType);
       setCurrentScreen('main');
-      loadInitialData(savedType);
+      loadInitialData();
     }
   }, []);
 
@@ -868,7 +875,7 @@ const CentralCompras = () => {
         <thead>
           <tr>
             <th>Nome</th>
-            <th>CNPJ</th>
+            <th>Categoria</th>
             <th>Endereço</th>
             <th>Telefone</th>
             <th>Ações</th>
@@ -885,7 +892,7 @@ const CentralCompras = () => {
             fornecedores.map(fornecedor => (
               <tr key={fornecedor.id}>
                 <td>{fornecedor.nome || ''}</td>
-                <td>{fornecedor.cnpj || ''}</td>
+                <td>{fornecedor.categoria || ''}</td>
                 <td>{fornecedor.endereco || ''}</td>
                 <td>{fornecedor.telefone || ''}</td>
                 <td>
@@ -1422,31 +1429,49 @@ const CentralCompras = () => {
               />
             </div>
             <div className="form-group">
-              <label>CNPJ</label>
+              <label>Categoria</label>
               <input
                 type="text"
-                value={formData.fornecedor.cnpj}
+                value={formData.fornecedor.categoria}
                 onChange={(e) => setFormData(prev => ({
                   ...prev,
-                  fornecedor: { ...prev.fornecedor, cnpj: e.target.value }
+                  fornecedor: { ...prev.fornecedor, categoria: e.target.value }
                 }))}
-                placeholder="00.000.000/0000-00"
+                placeholder="Categoria"
                 required
               />
             </div>
           </div>
-          <div className="form-group">
-            <label>Endereço</label>
-            <input
-              type="text"
-              value={formData.fornecedor.endereco}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                fornecedor: { ...prev.fornecedor, endereco: e.target.value }
-              }))}
-              placeholder="Rua, número, cidade"
-              required
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Endereço</label>
+              <input
+                type="text"
+                value={formData.fornecedor.endereco}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  fornecedor: { ...prev.fornecedor, endereco: e.target.value }
+                }))}
+                placeholder="Rua, número, cidade"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Estado</label>
+              <select
+                value={formData.fornecedor.estado}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  fornecedor: { ...prev.fornecedor, estado: e.target.value }
+                }))}
+                required
+              >
+                <option value="">Selecione o estado</option>
+                {estados.map(uf => (
+                  <option key={uf} value={uf}>{uf}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="form-row">
             <div className="form-group">

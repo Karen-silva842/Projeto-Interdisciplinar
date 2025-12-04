@@ -5,9 +5,9 @@ class Fornecedor {
   static async criar(data) {
     const {
       usuario_id,
-      nome_fornecedor,
+      nome: nome_fornecedor,
       endereco,
-      email_contato,
+      email: email_contato,
       telefone,
       categoria,
       estado
