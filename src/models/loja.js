@@ -5,33 +5,23 @@ class Loja {
     const {
       usuario_id,
       nome,
-      razao_social,
       cnpj,
-      logradouro,
-      numero,
-      complemento,
-      bairro,
-      cidade,
+      endereco,
       estado,
-      cep,
-      responsavel_nome,
-      responsavel_email,
-      responsavel_telefone
+      responsavel,
+      email,
+      telefone
     } = lojaData;
 
     const query = `
       INSERT INTO lojas (
-        usuario_id, nome, razao_social, cnpj, logradouro, numero, complemento,
-        bairro, cidade, estado, cep, responsavel_nome, responsavel_email,
-        responsavel_telefone, criado_em
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+        usuario_id, nome, cnpj, endereco, estado, responsavel, email, telefone, criado_em
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       RETURNING *
     `;
 
     const result = await db.query(query, [
-      usuario_id, nome, razao_social, cnpj, logradouro, numero, complemento,
-      bairro, cidade, estado, cep, responsavel_nome, responsavel_email,
-      responsavel_telefone
+      usuario_id, nome, cnpj, endereco, estado, responsavel, email, telefone
     ]);
 
     return result.rows[0];

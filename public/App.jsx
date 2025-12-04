@@ -52,9 +52,9 @@ const AuthAPI = {
 };
 
 const LojasAPI = {
-  getAll: () => apiRequest('/lojas'),
+  getAll: () => apiRequest('/administradores/lojas'),
   getById: (id) => apiRequest(`/lojas/${id}`),
-  create: (data) => apiRequest('/lojas', {
+  create: (data) => apiRequest('/administradores/lojas', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
@@ -68,7 +68,7 @@ const LojasAPI = {
 };
 
 const FornecedoresAPI = {
-  getAll: () => apiRequest('/fornecedores'),
+  getAll: () => apiRequest('/administradores/fornecedores'),
   getById: (id) => apiRequest(`/fornecedores/${id}`),
   create: (data) => apiRequest('/fornecedores', {
     method: 'POST',
@@ -214,6 +214,12 @@ const CentralCompras = () => {
     ]
   };
 
+  const estados = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+    'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+    'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+  ];
+
   // ============== FUNÇÕES UTILITÁRIAS ==============
   const formatCurrency = (value) => {
     if (value === null || value === undefined || isNaN(value)) return 'R$ 0,00';
@@ -262,15 +268,16 @@ const CentralCompras = () => {
       localStorage.setItem('token', token);
       localStorage.setItem('userType', type);
       
-      // Carregar dados iniciais
-      loadInitialData();
-      
     } catch (error) {
       alert('Erro no login: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadInitialData();
+  }, [currentUserType]);
 
   const loadInitialData = async () => {
     try {
@@ -284,11 +291,21 @@ const CentralCompras = () => {
             CampanhasAPI.getAll(),
             CondicoesAPI.getAll()
           ]);
-          setLojas(lojasData || []);
-          setFornecedores(fornecedoresData || []);
-          setProdutos(produtosData || []);
-          setCampanhas(campanhasData || []);
-          setCondicoes(condicoesData || []);
+          if (lojasData.success) {
+            setLojas(lojasData.data || []);
+          }
+          if (fornecedoresData.success) {
+            setFornecedores(fornecedoresData.data || []);
+          }
+          if (produtosData.success) {
+            setProdutos(produtosData.data || []);
+          }
+          if (campanhasData.success) {
+            setCampanhas(campanhasData.data || []);
+          }
+          if (condicoesData.success) {
+            setCondicoes(condicoesData.data || []);
+          }
           break;
           
         case 'loja':
@@ -335,10 +352,15 @@ const CentralCompras = () => {
     
     try {
       const response = await LojasAPI.create(formData.loja);
-      setLojas([...lojas, response]);
-      setModalOpen('');
-      resetForm('loja');
-      alert('Loja criada com sucesso!');
+      if (response.success) {
+        const loja = response.data.loja;
+
+        setLojas([...lojas, loja]);
+        setModalOpen('');
+        resetForm('loja');
+        alert(`Loja criada com sucesso!\nUsuario: ${response.data.credenciais.email}\nSenha: ${response.data.credenciais.senha}`);
+      }
+      
       
     } catch (error) {
       alert('Erro ao salvar loja: ' + error.message);
@@ -596,7 +618,7 @@ const CentralCompras = () => {
       setCurrentUser(userData);
       setCurrentUserType(savedType);
       setCurrentScreen('main');
-      loadInitialData();
+      loadInitialData(savedType);
     }
   }, []);
 
@@ -1291,18 +1313,36 @@ const CentralCompras = () => {
               />
             </div>
           </div>
-          <div className="form-group">
-            <label>Endereço</label>
-            <input
-              type="text"
-              value={formData.loja.endereco}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                loja: { ...prev.loja, endereco: e.target.value }
-              }))}
-              placeholder="Rua, número"
-              required
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Endereço</label>
+              <input
+                type="text"
+                value={formData.loja.endereco.nome}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  loja: { ...prev.loja, endereco: e.target.value }
+                }))}
+                placeholder="Rua, número"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Estado</label>
+              <select
+                value={formData.loja.estado}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  loja: { ...prev.loja, estado: e.target.value }
+                }))}
+                required
+              >
+                <option value="">Selecione o estado</option>
+                {estados.map(uf => (
+                  <option key={uf} value={uf}>{uf}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="form-row">
             <div className="form-group">

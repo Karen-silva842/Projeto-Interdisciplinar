@@ -38,7 +38,7 @@ class Fornecedor {
     const query = `
       SELECT f.*, u.email
       FROM fornecedores f
-      JOIN usuarios u ON f.usuario_id = u.id_usuario
+      JOIN usuarios u ON f.usuario_id = u.id
       ORDER BY f.nome_fornecedor ASC
     `;
     return (await db.query(query)).rows;
@@ -48,7 +48,7 @@ class Fornecedor {
     const query = `
       SELECT f.*, u.email
       FROM fornecedores f
-      JOIN usuarios u ON f.usuario_id = u.id_usuario
+      JOIN usuarios u ON f.usuario_id = u.id
       WHERE f.id_fornecedor = $1
     `;
     return (await db.query(query, [id])).rows[0];
@@ -58,7 +58,7 @@ class Fornecedor {
     const query = `
       SELECT f.*, u.email
       FROM fornecedores f
-      JOIN usuarios u ON f.usuario_id = u.id_usuario
+      JOIN usuarios u ON f.usuario_id = u.id
       WHERE f.usuario_id = $1
     `;
     return (await db.query(query, [usuario_id])).rows[0];
@@ -68,7 +68,7 @@ class Fornecedor {
     const query = `
       SELECT f.*, u.email
       FROM fornecedores f
-      JOIN usuarios u ON f.usuario_id = u.id_usuario
+      JOIN usuarios u ON f.usuario_id = u.id
       WHERE f.categoria = $1
     `;
     return (await db.query(query, [categoria])).rows;

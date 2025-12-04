@@ -38,7 +38,7 @@ class Campanha {
     const query = `
       SELECT c.*, p.nome AS produto_nome
       FROM campanhas c
-      LEFT JOIN produtos p ON c.produto_id = p.id
+      LEFT JOIN produtos p ON c.produto_id = p.id_produto
       WHERE c.fornecedor_id = $1
       ORDER BY c.criado_em DESC
     `;
@@ -51,7 +51,7 @@ class Campanha {
       SELECT c.*, f.nome AS fornecedor_nome, p.nome AS produto_nome
       FROM campanhas c
       JOIN fornecedores f ON c.fornecedor_id = f.id
-      LEFT JOIN produtos p ON c.produto_id = p.id
+      LEFT JOIN produtos p ON c.produto_id = p.id_produto
       WHERE c.ativa = true 
         AND c.data_inicio <= NOW() 
         AND c.data_fim >= NOW()
