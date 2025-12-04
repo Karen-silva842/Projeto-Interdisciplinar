@@ -381,7 +381,11 @@ const CentralCompras = () => {
     try {
       const response = await FornecedoresAPI.create(formData.fornecedor);
       if (response.success) {
-        const fornecedor = response.data.fornecedor;
+        const fornecedor = {
+          ...response.data.fornecedor,
+          nome: response.data.fornecedor.nome_fornecedor,
+          email: response.data.fornecedor.email_contato
+        };
         setFornecedores([...fornecedores, fornecedor]);
         setModalOpen('');
         resetForm('fornecedor');
@@ -408,7 +412,10 @@ const CentralCompras = () => {
       
       const response = await ProdutosAPI.create(produtoData);
       if (response.success) {
-        const produto = response.data;
+        const produto = {
+          ...response.data,
+          fornecedor: formData.produto.fornecedor
+        };
 
         setProdutos([...produtos, produto]);
         setModalOpen('');
@@ -1545,9 +1552,9 @@ const CentralCompras = () => {
             <div className="form-group">
               <label>Fornecedor</label>
               <select
-                value={formData.produto.fornecedor}
+                value={formData.produto.fornecedor.id_fornecedor}
                 onChange={(e) => setFormData(prev => {
-                  const fornecedor = fornecedores.find(f => f.id_fornecedor === e.target.value);
+                  const fornecedor = fornecedores.find(f => f.id_fornecedor == e.target.value);
                   return {
                     ...prev,
                     produto: { ...prev.produto, fornecedor: fornecedor }
