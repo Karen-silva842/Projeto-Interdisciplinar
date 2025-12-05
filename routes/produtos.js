@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const ProdutosController = require('../src/controllers/produtosController');
+const authMiddleware = require('../src/middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -49,6 +50,20 @@ router.get('/', ProdutosController.listarTodos);
  *         description: Resultados da busca
  */
 router.get('/busca', ProdutosController.buscar);
+
+/**
+ * @swagger
+ * /api/produtos/fornecedor:
+ *   get:
+ *     summary: Listar todos os produtos do fornecedor logado
+ *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de produtosdo fornecedor logado
+ */
+router.get('/fornecedor', authMiddleware, ProdutosController.buscarPorFornecedor);
 
 /**
  * @swagger

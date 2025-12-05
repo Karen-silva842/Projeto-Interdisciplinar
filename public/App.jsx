@@ -62,7 +62,7 @@ const LojasAPI = {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
-  delete: (id) => apiRequest(`/lojas/${id}`, {
+  delete: (id) => apiRequest(`/administradores/lojas/${id}`, {
     method: 'DELETE'
   })
 };
@@ -78,7 +78,7 @@ const FornecedoresAPI = {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
-  delete: (id) => apiRequest(`/fornecedores/${id}`, {
+  delete: (id) => apiRequest(`/administradores/fornecedores/${id}`, {
     method: 'DELETE'
   })
 };
@@ -86,7 +86,7 @@ const FornecedoresAPI = {
 const ProdutosAPI = {
   getAll: () => apiRequest('/produtos'),
   getById: (id) => apiRequest(`/produtos/${id}`),
-  getByFornecedor: (fornecedorId) => apiRequest(`/produtos/fornecedor/${fornecedorId}`),
+  getByFornecedor: () => apiRequest(`/produtos/fornecedor`),
   create: (data) => apiRequest('/administradores/produtos', {
     method: 'POST',
     body: JSON.stringify(data)
@@ -95,7 +95,7 @@ const ProdutosAPI = {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
-  delete: (id) => apiRequest(`/produtos/${id}`, {
+  delete: (id) => apiRequest(`/administradores/produtos/${id}`, {
     method: 'DELETE'
   })
 };
@@ -157,6 +157,7 @@ const CentralCompras = () => {
   const [activeTab, setActiveTab] = useState('admin');
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentProfile, setCurrentProfile] = useState(null)
   const [currentUserType, setCurrentUserType] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -180,7 +181,7 @@ const CentralCompras = () => {
     loja: { id: '', nome: '', cnpj: '', endereco: '', responsavel: '', telefone: '', email: '' },
     fornecedor: { id: '', nome: '', categoria: '', endereco: '', telefone: '', email: '', estado: '' },
     produto: { id: '', nome: '', fornecedor: {}, status: '', preco: '', quantidade_estoque: '', descricao: '' },
-    campanha: { id: '', nome: '', tipo: '', status: 'Ativa', valor: '', descricao: '', inicio: '', termino: '' },
+    campanha: { id: '', nome: '', data_inicio: '', data_fim: '', tipo: 'valor', valor: 0, produto: {} },
     condicao: { id: '', uf: '', cashback: '', prazo: '', acrescimo: '' }
   });
 
@@ -195,8 +196,6 @@ const CentralCompras = () => {
       { id: 'lojas', label: 'Lojas', icon: '🏪' },
       { id: 'fornecedores', label: 'Fornecedores', icon: '🚚' },
       { id: 'produtos', label: 'Produtos', icon: '📦' },
-      { id: 'campanhas', label: 'Campanhas', icon: '📢' },
-      { id: 'condicoes', label: 'Condições', icon: '⚙️' }
     ],
     loja: [
       { id: 'dashboard', label: 'Dashboard', icon: '📊' },
@@ -257,14 +256,16 @@ const CentralCompras = () => {
     try {
       const response = await AuthAPI.login(usuario, senha, type);
       
-      const { data: { token, usuario: authUser} } = response
+      const { data: { token, usuario: authUser, perfil} } = response
       setCurrentUser(authUser);
       setCurrentUserType(type);
       setCurrentScreen('main');
       setCurrentPage('dashboard');
+      setCurrentProfile(perfil)
       
       // Salvar no localStorage
       localStorage.setItem('user', JSON.stringify(authUser));
+      localStorage.setItem('profile', JSON.stringify(perfil));
       localStorage.setItem('token', token);
       localStorage.setItem('userType', type);
       
@@ -284,29 +285,25 @@ const CentralCompras = () => {
       // Carregar dados com base no tipo de usuário
       switch(currentUserType) {
         case 'admin':
-          const [lojasData, fornecedoresData, produtosData, campanhasData, condicoesData] = await Promise.all([
+          const [lojasData, fornecedoresData, produtosData, condicoesData] = await Promise.all([
             LojasAPI.getAll(),
             FornecedoresAPI.getAll(),
             ProdutosAPI.getAll(),
-            CampanhasAPI.getAll(),
             CondicoesAPI.getAll()
           ]);
           if (lojasData.success) {
             setLojas(lojasData.data || []);
           }
           if (fornecedoresData.success) {
-            const reforcedFornecedores = fornecedoresData.data.map(fornecedor => ({
+            const parsedFornecedores = fornecedoresData.data.map(fornecedor => ({
               ...fornecedor,
               nome: fornecedor.nome_fornecedor,
               email: fornecedor.email_contato,
             }));
-            setFornecedores(reforcedFornecedores || []);
+            setFornecedores(parsedFornecedores || []);
           }
           if (produtosData.success) {
             setProdutos(produtosData.data || []);
-          }
-          if (campanhasData.success) {
-            setCampanhas(campanhasData.data || []);
           }
           if (condicoesData.success) {
             setCondicoes(condicoesData.data || []);
@@ -323,12 +320,21 @@ const CentralCompras = () => {
           break;
           
         case 'fornecedor':
-          const [produtosFornecedor, pedidosFornecedor] = await Promise.all([
-            ProdutosAPI.getByFornecedor(currentUser.id),
-            PedidosAPI.getByFornecedor(currentUser.id)
+          const [produtosFornecedor, campanhasData] = await Promise.all([
+            ProdutosAPI.getByFornecedor(),
+            CampanhasAPI.getAll(),
+            // PedidosAPI.getByFornecedor(currentUser.id)
           ]);
-          setProdutos(produtosFornecedor || []);
-          setPedidos(pedidosFornecedor || []);
+          if (produtosFornecedor.success) {
+            setProdutos(produtosFornecedor.data || []);
+          }
+
+          if (campanhasData.success) {
+            setCampanhas(campanhasData.data || []);
+          }
+          // if (pedidosFornecedor.success) {
+          //   setPedidos(pedidosFornecedor.data || []);
+          // }
           break;
       }
     } catch (error) {
@@ -435,11 +441,23 @@ const CentralCompras = () => {
     setLoading(true);
     
     try {
-      const response = await CampanhasAPI.create(formData.campanha);
-      setCampanhas([...campanhas, response]);
-      setModalOpen('');
-      resetForm('campanha');
-      alert('Campanha criada com sucesso!');
+      const campanhaData = {
+        ...formData.campanha,
+        produto_id: formData.campanha.produto.id_produto,
+        tipo: formData.campanha.tipo || 'quantidade'
+      }
+      const response = await CampanhasAPI.create(campanhaData);
+      if (response.success) {
+        const campanha = {
+          ...response.data,
+          fornecedor: currentProfile,
+          produto: formData.campanha.produto
+        }
+        setCampanhas([...campanhas, campanha]);
+        setModalOpen('');
+        resetForm('campanha');
+        alert('Campanha criada com sucesso!');
+      }
       
     } catch (error) {
       alert('Erro ao salvar campanha: ' + error.message);
@@ -487,17 +505,17 @@ const CentralCompras = () => {
           
         case 'fornecedor':
           await FornecedoresAPI.delete(id);
-          setFornecedores(fornecedores.filter(f => f.id !== id));
+          setFornecedores(fornecedores.filter(f => f.id_fornecedor !== id));
           break;
           
         case 'produto':
           await ProdutosAPI.delete(id);
-          setProdutos(produtos.filter(p => p.id !== id));
+          setProdutos(produtos.filter(p => p.id_produto !== id));
           break;
           
         case 'campanha':
           await CampanhasAPI.delete(id);
-          setCampanhas(campanhas.filter(c => c.id !== id));
+          setCampanhas(campanhas.filter(c => c.id_campanha !== id));
           break;
           
         case 'condicao':
@@ -631,10 +649,13 @@ const CentralCompras = () => {
   // ============== EFFECTS ==============
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
+    const savedProfile = localStorage.getItem('profile');
     const savedType = localStorage.getItem('userType');
     if (savedUser && savedType) {
       const userData = JSON.parse(savedUser);
+      const profileData = JSON.parse(savedProfile)
       setCurrentUser(userData);
+      setCurrentProfile(profileData);
       setCurrentUserType(savedType);
       setCurrentScreen('main');
       loadInitialData();
@@ -974,7 +995,7 @@ const CentralCompras = () => {
                   <div className="action-buttons">
                     <button className="btn-edit">Editar</button>
                     <button className="btn-delete" onClick={() => 
-                      setDeleteData({ tipo: 'produto', id: produto.id, nome: produto.nome })
+                      setDeleteData({ tipo: 'produto', id: produto.id_produto, nome: produto.nome })
                     }>
                       Excluir
                     </button>
@@ -1010,8 +1031,8 @@ const CentralCompras = () => {
             ...prev,
             campanha: {
               ...prev.campanha,
-              inicio: today,
-              termino: futureDate
+              data_inicio: today,
+              data_fim: futureDate
             }
           }));
           
@@ -1021,45 +1042,47 @@ const CentralCompras = () => {
         </button>
       </div>
 
-      <div className="campaigns-grid" id="campanhasGrid">
-        {campanhas.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#999' }}>
-            Nenhuma campanha cadastrada.
-          </div>
-        ) : (
-          campanhas.map(campanha => {
-            let statusColor = '#4CAF50';
-            if (campanha.status === 'Planejada') statusColor = '#FF9800';
-            if (campanha.status === 'Inativa') statusColor = '#757575';
-            
-            return (
-              <div key={campanha.id} className="campaign-card">
-                <div className="campaign-header">
-                  <div className="campaign-icon">🏷️</div>
-                  <span className="status-badge" style={{ background: statusColor, color: '#fff' }}>
-                    {campanha.status}
-                  </span>
-                </div>
-                <h3>{campanha.nome || ''}</h3>
-                <p>{campanha.descricao || ''}</p>
-                <div className="campaign-value">{campanha.valor || ''}</div>
-                <div className="campaign-dates">
-                  <div><strong>Início:</strong> {formatDate(campanha.inicio)}</div>
-                  <div><strong>Término:</strong> {formatDate(campanha.termino)}</div>
-                </div>
-                <div className="campaign-actions">
-                  <button className="btn-edit">Editar</button>
-                  <button className="btn-delete" onClick={() => 
-                    setDeleteData({ tipo: 'campanha', id: campanha.id, nome: campanha.nome })
-                  }>
-                    Excluir
-                  </button>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
+      <table className="data-table" id="campanhasTable">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Produto</th>
+            <th>Data Inicio</th>
+            <th>Tipo</th>
+            <th>Valor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {campanhas.length === 0 ? (
+            <tr>
+              <td colSpan="7" style={{ textAlign: 'center', padding: '30px', color: '#999' }}>
+                Nenhuma campanha cadastrada.
+              </td>
+            </tr>
+          ) : (
+            campanhas.map(campanha => (
+              <tr key={campanha.id_campanha}>
+                <td>{campanha.nome}</td>
+                <td>{campanha.produto.nome}</td>
+                <td>{campanha.data_inicio.split('T')[0]}</td>
+                <td>{campanha.tipo}</td>
+                <td>{campanha.valor}</td>
+                <td>
+                  <div className="action-buttons">
+                    <button className="btn-edit">Editar</button>
+                    <button className="btn-delete" onClick={() => 
+                      setDeleteData({ tipo: 'campanha', id: campanha.id_campanha, nome: campanha.nome })
+                    }>
+                      Excluir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 
@@ -1638,6 +1661,140 @@ const CentralCompras = () => {
     </div>
   );
 
+  const renderCampanhaModal = () => (
+    <div id="produtoModal" className={`modal ${modalOpen === 'campanhaModal' ? 'active' : ''}`}>
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2>Adicionar Campanha</h2>
+          <p>Cadastre uma nova campanha no sistema</p>
+          <button className="modal-close" onClick={() => setModalOpen('')}>&times;</button>
+        </div>
+        <form className="modal-form" onSubmit={handleSaveCampanha}>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Nome</label>
+              <input
+                type="text"
+                value={formData.campanha.nome}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  campanha: { ...prev.campanha, nome: e.target.value }
+                }))}
+                placeholder="Nome da campanha"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Tipo de campanha</label>
+              <select
+                value={formData.campanha.tipo}
+                defaultValue={'valor'}
+                onChange={(e) => setFormData(prev => {
+                  return {
+                    ...prev,
+                    campanha: { ...prev.campanha, tipo: e.target.value }
+                  }
+                })}
+                required
+              >
+                <option key={'quantidade'} value={'quantidade'}>Quantidade</option>
+                <option key={'valor'} value={'valor'}>Valor</option>
+              </select>
+            </div>
+          </div>
+          {formData.campanha.tipo === 'valor' ? (
+            <div className="form-group">
+              <label>Compras acima de:</label>
+              <input
+                type="number"
+                value={formData.campanha.valor}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  campanha: { ...prev.campanha, valor: e.target.value }
+                }))}
+                placeholder="Valor minimo da compra"
+                required
+              />
+            </div>
+          ) : (
+            <div className="form-row">
+              <div className="form-group">
+                <label>Unidades</label>
+                <input
+                  type="number"
+                  value={formData.campanha.valor}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    campanha: { ...prev.campanha, valor: e.target.value }
+                  }))}
+                  placeholder="Desconto a ser aplicado"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Produto</label>
+                <select
+                  value={formData.campanha.produto.id_produto}
+                  onChange={(e) => setFormData(prev => {
+                    const produto = produtos.find(f => f.id_produto == e.target.value);
+                    return {
+                      ...prev,
+                      campanha: { ...prev.campanha, produto: produto }
+                    }
+                  })}
+                  required
+                >
+                  <option value="">Selecione o produto</option>
+                  {produtos.map(produto => (
+                    <option key={produto.id_produto} value={produto.id_produto}>
+                      {produto.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+          <div className="form-row">
+            <div className="form-group">
+              <label>Data Inicio</label>
+              <input
+                type="date"
+                value={formData.campanha.data_inicio}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  campanha: { ...prev.campanha, data_inicio: e.target.value }
+                }))}
+                placeholder="dd/mm/aaaa"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Data Fim</label>
+              <input
+                type="date"
+                value={formData.campanha.data_fim}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  campanha: { ...prev.campanha, data_fim: e.target.value }
+                }))}
+                placeholder="dd/mm/aaaa"
+                required
+              />
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar'}
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => setModalOpen('')}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
   const renderDeleteModal = () => (
     <div id="confirmDeleteModal" className={`modal ${deleteData.tipo ? 'active' : ''}`}>
       <div className="modal-content">
@@ -1718,6 +1875,7 @@ const CentralCompras = () => {
       {renderFornecedorModal()}
       {renderProdutoModal()}
       {renderDeleteModal()}
+      {renderCampanhaModal()}
     </div>
   );
 };

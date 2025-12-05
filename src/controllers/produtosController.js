@@ -13,14 +13,15 @@ class ProdutosController {
         produtos = await Produto.buscarPorFornecedor(fornecedor_id);
       } else {
         produtos = await Produto.buscarTodos({ pagina, limite });
-        produtos = produtos.map((produto) => ({
-          ...produto,
-          fornecedor: {
-            id_fornecedor: produto.fornecedor_id,
-            nome_fornecedor: produto.nome_fornecedor
-          }
-        }))
       }
+
+      produtos = produtos.map((produto) => ({
+        ...produto,
+        fornecedor: {
+          id_fornecedor: produto.fornecedor_id,
+          nome_fornecedor: produto.nome_fornecedor
+        }
+      }))
 
       res.json({
         success: true,
@@ -55,6 +56,40 @@ class ProdutosController {
       res.json({
         success: true,
         data: produto
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Erro ao buscar produto',
+        error: error.message
+      });
+    }
+  }
+
+  static async buscarPorFornecedor(req, res) {
+    try {
+      const usuario = req.usuario;
+      const fornecedor = usuario ? usuario.perfil_id : null
+      if (fornecedor) {
+        let produtos = await Produto.buscarPorFornecedor(fornecedor)
+        
+        produtos = produtos.map((produto) => ({
+          ...produto,
+          fornecedor: {
+            id_fornecedor: produto.fornecedor_id,
+            nome_fornecedor: produto.nome_fornecedor
+          }
+        }))
+        
+        res.json({
+          success: true,
+          data: produtos
+        });
+      }
+
+      res.json({
+        success: true,
+        data: []
       });
     } catch (error) {
       res.status(500).json({

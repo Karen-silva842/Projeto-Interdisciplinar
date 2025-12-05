@@ -25,11 +25,18 @@ class Produto {
     return result.rows[0];
   }
 
+  static async deletar(id) {
+    const query = `
+      DELETE FROM produtos WHERE id_produto = $1
+    `;
+    await db.query(query, [id]);
+  }
+
   static async buscarPorFornecedor(fornecedorId) {
     const query = `
-      SELECT p.*, c.nome AS categoria_nome
+      SELECT p.*, f.nome_fornecedor
       FROM produtos p
-      JOIN categorias c ON p.categoria_id = c.id_categoria
+      JOIN fornecedores f ON p.fornecedor_id = f.id_fornecedor
       WHERE p.fornecedor_id = $1
       ORDER BY p.nome
     `;

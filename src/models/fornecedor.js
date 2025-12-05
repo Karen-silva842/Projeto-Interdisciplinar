@@ -34,6 +34,13 @@ class Fornecedor {
     return result.rows[0];
   }
 
+  static async deletar(id) {
+    const query = `
+      DELETE FROM fornecedores WHERE id_fornecedor = $1
+    `;
+    await db.query(query, [id]);
+  }
+
   static async listarTodos() {
     const query = `
       SELECT f.*, u.email

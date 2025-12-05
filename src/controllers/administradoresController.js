@@ -3,6 +3,7 @@ const Fornecedor = require('../models/fornecedor');
 const Usuario = require('../models/usuario');
 const { generateCredentials, generateTempEmail } = require('../utils/gerarCredenciais');
 const Produto = require('../models/produto');
+const Campanha = require('../models/campanha')
 
 class AdministradoresController {
   static async cadastrarLoja(req, res) {
@@ -30,6 +31,36 @@ class AdministradoresController {
       });
     } catch (error) {
       res.status(500).json({ success: false, message: 'Erro ao cadastrar loja', error: error.message });
+    }
+  }
+
+  static async deletarLoja(req, res) {
+    try {
+      const { id } = req.params;
+      await Loja.deletar(id);
+      res.json({ success: true, message: 'Loja deletada com sucesso' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Erro ao deletar loja', error: error.message });
+    }
+  }
+
+  static async deletarFornecedor(req, res) {
+    try {
+      const { id } = req.params;
+      await Fornecedor.deletar(id);
+      res.json({ success: true, message: 'Fornecedor deletado com sucesso' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Erro ao deletar fornecedor', error: error.message });
+    }
+  }
+
+  static async deletarProduto(req, res) {
+    try {
+      const { id } = req.params;
+      await Produto.deletar(id);
+      res.json({ success: true, message: 'Produto deletado com sucesso' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Erro ao deletar produto', error: error.message });
     }
   }
 

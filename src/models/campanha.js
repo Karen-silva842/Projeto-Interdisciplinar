@@ -6,29 +6,22 @@ class Campanha {
     const {
       fornecedor_id,
       nome,
-      descricao,
-      tipo,
-      valor_minimo,
-      quantidade_minima,
       produto_id,
-      tipo_recompensa,
-      valor_recompensa,
       data_inicio,
       data_fim,
-      ativa
+      valor,
+      tipo
     } = campanhaData;
 
     const query = `
       INSERT INTO campanhas (
-        fornecedor_id, nome, descricao, tipo, valor_minimo, quantidade_minima,
-        produto_id, tipo_recompensa, valor_recompensa, data_inicio, data_fim, ativa, criado_em
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+        fornecedor_id, nome, produto_id, data_inicio, data_fim, valor, tipo, criado_em
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       RETURNING *
     `;
 
     const result = await db.query(query, [
-      fornecedor_id, nome, descricao, tipo, valor_minimo, quantidade_minima,
-      produto_id, tipo_recompensa, valor_recompensa, data_inicio, data_fim, ativa
+      fornecedor_id, nome, produto_id, data_inicio, data_fim, valor, tipo
     ]);
 
     return result.rows[0];
@@ -97,7 +90,7 @@ class Campanha {
   }
 
   static async excluir(id) {
-    const query = 'DELETE FROM campanhas WHERE id = $1 RETURNING *';
+    const query = 'DELETE FROM campanhas WHERE id_campanha = $1 RETURNING *';
     const result = await db.query(query, [id]);
     return result.rows[0];
   }

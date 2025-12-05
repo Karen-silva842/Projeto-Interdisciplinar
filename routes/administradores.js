@@ -45,6 +45,75 @@ router.post('/lojas', AdministradoresController.cadastrarLoja);
 
 /**
  * @swagger
+ * /api/administradores/lojas/:id:
+ *   delete:
+ *     summary: Deletar uma loja
+ *     tags: [Administradores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID da loja a ser deletada
+ *     responses:
+ *       201:
+ *         description: Loja deletada com sucesso
+ *       500:
+ *         description: Erro ao deletar loja
+ */
+router.delete('/lojas/:id', AdministradoresController.deletarLoja);
+
+/**
+ * @swagger
+ * /api/administradores/fornecedores/:id:
+ *   delete:
+ *     summary: Deletar um fornecedor
+ *     tags: [Administradores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do fornecedor a ser deletado
+ *     responses:
+ *       201:
+ *         description: Fornecedor deletado com sucesso
+ *       500:
+ *         description: Erro ao deletar fornecedor
+ */
+router.delete('/fornecedores/:id', AdministradoresController.deletarFornecedor);
+
+/**
+ * @swagger
+ * /api/administradores/produtos/:id:
+ *   delete:
+ *     summary: Deletar um produto
+ *     tags: [Administradores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do produto a ser deletado
+ *     responses:
+ *       201:
+ *         description: Produto deletado com sucesso
+ *       500:
+ *         description: Erro ao deletar produto
+ */
+router.delete('/produtos/:id', AdministradoresController.deletarProduto);
+
+/**
+ * @swagger
  * /api/administradores/produtos:
  *   post:
  *     summary: Cadastrar um novo produto

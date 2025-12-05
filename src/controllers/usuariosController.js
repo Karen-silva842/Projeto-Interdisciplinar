@@ -16,15 +16,22 @@ class UsuariosController {
       const senhaValida = await verifyPassword(senha, usuario.senha_hash);
       if (!senhaValida) return res.status(401).json({ success: false, message: 'Credenciais inválidas' });
 
-      let perfil = null;
-      if (usuario.tipo === 'loja') perfil = await Loja.buscarPorUsuarioId(usuario.id);
-      else if (usuario.tipo === 'fornecedor') perfil = await Fornecedor.buscarPorUsuarioId(usuario.id);
+      let perfil_id = null;
+      let perfil = null
+      if (usuario.tipo === 'loja') {
+        perfil = await Loja.buscarPorUsuarioId(usuario.id);
+        perfil_id = perfil.id
+      }
+      else if (usuario.tipo === 'fornecedor') {
+        perfil = await Fornecedor.buscarPorUsuarioId(usuario.id);
+        perfil_id = perfil.id_fornecedor
+      }
 
       const token = gerarToken({
         id: usuario.id,
         email: usuario.email,
         tipo: usuario.tipo,
-        perfil_id: perfil ? perfil.id : null
+        perfil_id: perfil_id
       });
 
       res.json({

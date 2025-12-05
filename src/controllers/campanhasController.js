@@ -23,9 +23,17 @@ class CampanhasController {
       const fornecedorId = req.usuario.perfil_id;
       const campanhas = await Campanha.buscarPorFornecedor(fornecedorId);
 
+      const campanhasData = campanhas.map((campanha) => ({
+        ...campanha,
+        produto: {
+          id_produto: campanha.produto_id,
+          nome: campanha.produto_nome
+        }
+      }))
+
       res.json({
         success: true,
-        data: campanhas
+        data: campanhasData
       });
     } catch (error) {
       res.status(500).json({
@@ -98,7 +106,7 @@ class CampanhasController {
       const { id } = req.params;
 
       const campanhas = await Campanha.buscarPorFornecedor(fornecedorId);
-      const campanhaExistente = campanhas.find(c => c.id === parseInt(id));
+      const campanhaExistente = campanhas.find(c => c.id_campanha === parseInt(id));
 
       if (!campanhaExistente) {
         return res.status(403).json({

@@ -27,6 +27,14 @@ class Loja {
     return result.rows[0];
   }
 
+  static async deletar(loja_id) {
+    const query = `
+      DELETE FROM lojas
+      WHERE id = $1
+    `;
+    await db.query(query, [loja_id]);
+  }
+
   static async listarTodas() {
     const query = `
       SELECT l.*, u.email 
