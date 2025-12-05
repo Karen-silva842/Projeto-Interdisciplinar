@@ -207,7 +207,7 @@ const CentralCompras = () => {
     fornecedor: [
       { id: 'dashboard', label: 'Dashboard', icon: '📊' },
       { id: 'pedidosRecebidos', label: 'Pedidos Recebidos', icon: '📥' },
-      { id: 'meusProdutos', label: 'Meus Produtos', icon: '📦' },
+      { id: 'produtos', label: 'Meus Produtos', icon: '📦' },
       { id: 'campanhas', label: 'Campanhas', icon: '📢' },
       { id: 'condicoes', label: 'Condições', icon: '⚙️' }
     ]
@@ -413,7 +413,7 @@ const CentralCompras = () => {
         ...formData.produto,
         preco: parseFloat(formData.produto.preco),
         estoque: parseInt(formData.produto.estoque),
-        fornecedor_id: formData.produto.fornecedor.id_fornecedor
+        fornecedor_id: formData.produto.fornecedor ? formData.produto.fornecedor.id_fornecedor : undefined
       };
       
       const response = await ProdutosAPI.create(produtoData);
@@ -969,7 +969,7 @@ const CentralCompras = () => {
         <thead>
           <tr>
             <th>Nome</th>
-            <th>Fornecedor</th>
+            {currentUser.tipo !== 'fornecedor' ? <th>Fornecedor</th> : null}
             <th>Status</th>
             <th>Preço</th>
             <th>Estoque</th>
@@ -987,7 +987,7 @@ const CentralCompras = () => {
             produtos.map(produto => (
               <tr key={produto.id_produto}>
                 <td>{produto.nome || ''}</td>
-                <td>{produto.fornecedor.nome_fornecedor || ''}</td>
+                {currentUser.tipo !== 'fornecedor' ? <td>{produto.fornecedor.nome_fornecedor || ''}</td> : null }
                 <td>{produto.status || ''}</td>
                 <td>{formatCurrency(produto.preco)}</td>
                 <td>{produto.quantidade_estoque || 0}</td>
@@ -1571,28 +1571,7 @@ const CentralCompras = () => {
               required
             />
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Fornecedor</label>
-              <select
-                value={formData.produto.fornecedor.id_fornecedor}
-                onChange={(e) => setFormData(prev => {
-                  const fornecedor = fornecedores.find(f => f.id_fornecedor == e.target.value);
-                  return {
-                    ...prev,
-                    produto: { ...prev.produto, fornecedor: fornecedor }
-                  }
-                })}
-                required
-              >
-                <option value="">Selecione o fornecedor</option>
-                {fornecedores.map(fornecedor => (
-                  <option key={fornecedor.id_fornecedor} value={fornecedor.id_fornecedor}>
-                    {fornecedor.nome} | {fornecedor.id_fornecedor}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {currentUser && currentUser.tipo === 'fornecedor' ? (
             <div className="form-group">
               <label>Status</label>
               <input
@@ -1606,7 +1585,44 @@ const CentralCompras = () => {
                 required
               />
             </div>
-          </div>
+          ) : (
+            <div className="form-row">
+              <div className="form-group">
+                <label>Fornecedor</label>
+                <select
+                  value={formData.produto.fornecedor.id_fornecedor}
+                  onChange={(e) => setFormData(prev => {
+                    const fornecedor = fornecedores.find(f => f.id_fornecedor == e.target.value);
+                    return {
+                      ...prev,
+                      produto: { ...prev.produto, fornecedor: fornecedor }
+                    }
+                  })}
+                  required
+                >
+                  <option value="">Selecione o fornecedor</option>
+                  {fornecedores.map(fornecedor => (
+                    <option key={fornecedor.id_fornecedor} value={fornecedor.id_fornecedor}>
+                      {fornecedor.nome} | {fornecedor.id_fornecedor}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <input
+                  type="text"
+                  value={formData.produto.status}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    produto: { ...prev.produto, status: e.target.value }
+                  }))}
+                  placeholder="Status do produto"
+                  required
+                />
+              </div>
+            </div>
+          )}
           <div className="form-row">
             <div className="form-group">
               <label>Preço</label>

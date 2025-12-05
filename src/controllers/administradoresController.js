@@ -67,6 +67,10 @@ class AdministradoresController {
   static async cadastrarProduto(req, res) {
     try {
       const produtoData = req.body;
+      if (!produtoData.fornecedor_id) {
+        const fornecedorId = req.usuario.perfil_id;
+        produtoData.fornecedor_id = fornecedorId
+      }
       const produto = await Produto.criar(produtoData);
       res.status(201).json({ success: true, message: 'Produto cadastrado com sucesso', data: produto });
     } catch (error) {
