@@ -7,7 +7,7 @@ const { gerarToken } = require('../utils/jwt');
 class UsuariosController {
   static async login(req, res) {
     try {
-      const { email, senha } = req.body;
+      const { email, senha, tipo } = req.body;
       if (!email || !senha) return res.status(400).json({ success: false, message: 'Email e senha são obrigatórios' });
 
       const usuario = await Usuario.buscarPorEmail(email);
@@ -20,10 +20,16 @@ class UsuariosController {
       let perfil = null
       if (usuario.tipo === 'loja') {
         perfil = await Loja.buscarPorUsuarioId(usuario.id);
+        if (!!perfil && tipo !== 'loja') {
+          throw new Error("Credenciais invalidas")
+        }
         perfil_id = perfil.id
       }
       else if (usuario.tipo === 'fornecedor') {
         perfil = await Fornecedor.buscarPorUsuarioId(usuario.id);
+        if (!!perfil && tipo !== 'fornecedor') {
+          throw new Error("Credenciais invalidas")
+        }
         perfil_id = perfil.id_fornecedor
       }
 
