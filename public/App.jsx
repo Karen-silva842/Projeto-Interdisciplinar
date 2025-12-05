@@ -104,7 +104,7 @@ const PedidosAPI = {
   getAll: () => apiRequest('/pedidos'),
   getById: (id) => apiRequest(`/pedidos/${id}`),
   getByLoja: (lojaId) => apiRequest(`/pedidos/loja/${lojaId}`),
-  getByFornecedor: (fornecedorId) => apiRequest(`/pedidos/fornecedor/${fornecedorId}`),
+  getByFornecedor: () => apiRequest(`/pedidos/fornecedor`),
   create: (data) => apiRequest('/pedidos', {
     method: 'POST',
     body: JSON.stringify(data)
@@ -168,6 +168,7 @@ const CentralCompras = () => {
   const [campanhas, setCampanhas] = useState([]);
   const [condicoes, setCondicoes] = useState([]);
   const [pedidos, setPedidos] = useState([]);
+  const [pedidosRecebidos, setPedidosRecebidos] = useState([]);
   const [carrinho, setCarrinho] = useState([]);
   
   // ============== ESTADOS DE FORMULÁRIO ==============
@@ -313,17 +314,22 @@ const CentralCompras = () => {
         case 'loja':
           const [produtosDisponiveis, pedidosLoja] = await Promise.all([
             ProdutosAPI.getAll(),
-            PedidosAPI.getByLoja(currentUser.id)
+            PedidosAPI.getByLoja(currentProfile.id)
           ]);
-          setProdutos(produtosDisponiveis || []);
-          setPedidos(pedidosLoja || []);
+          if (produtosDisponiveis.success) {
+            setProdutos(produtosDisponiveis.data || []);
+          }
+          
+          if (pedidosLoja.success) {
+            setPedidos(pedidosLoja.data || []);
+          }
           break;
           
         case 'fornecedor':
-          const [produtosFornecedor, campanhasData] = await Promise.all([
+          const [produtosFornecedor, campanhasData, pedidosFornecedor] = await Promise.all([
             ProdutosAPI.getByFornecedor(),
             CampanhasAPI.getAll(),
-            // PedidosAPI.getByFornecedor(currentUser.id)
+            PedidosAPI.getByFornecedor()
           ]);
           if (produtosFornecedor.success) {
             setProdutos(produtosFornecedor.data || []);
@@ -332,9 +338,9 @@ const CentralCompras = () => {
           if (campanhasData.success) {
             setCampanhas(campanhasData.data || []);
           }
-          // if (pedidosFornecedor.success) {
-          //   setPedidos(pedidosFornecedor.data || []);
-          // }
+          if (pedidosFornecedor.success) {
+            setPedidosRecebidos(pedidosFornecedor.data || []);
+          }
           break;
       }
     } catch (error) {
@@ -546,10 +552,10 @@ const CentralCompras = () => {
 
   // ============== HANDLERS PEDIDOS ==============
   const handleAddToCart = (produto) => {
-    const existingItem = carrinho.find(item => item.id === produto.id);
+    const existingItem = carrinho.find(item => item.id_produto === produto.id_produto);
     
     if (existingItem) {
-      if (existingItem.quantidade + 1 > produto.estoque) {
+      if (existingItem.quantidade + 1 > produto.quantidade_estoque) {
         alert('Estoque insuficiente');
         return;
       }
@@ -559,7 +565,7 @@ const CentralCompras = () => {
           : item
       ));
     } else {
-      if (produto.estoque < 1) {
+      if (produto.quantidade_estoque < 1) {
         alert('Estoque insuficiente');
         return;
       }
@@ -608,32 +614,35 @@ const CentralCompras = () => {
 
     try {
       const pedidoData = {
-        lojaId: currentUser.id,
+        loja_id: currentProfile.id,
         itens: carrinho.map(item => ({
-          produtoId: item.id,
+          produto_id: item.id_produto,
           quantidade: item.quantidade,
           preco: item.preco
         })),
         total: carrinho.reduce((sum, item) => sum + (item.preco * item.quantidade), 0)
       };
 
-      const response = await PedidosAPI.create(pedidoData);
+      await PedidosAPI.create(pedidoData);
       
       // Atualizar estoque dos produtos
       carrinho.forEach(async (item) => {
-        await ProdutosAPI.update(item.id, {
-          ...item,
-          estoque: item.estoque - item.quantidade
+        await ProdutosAPI.update(item.id_produto, {
+          quantidade_estoque: item.quantidade_estoque - item.quantidade
         });
       });
 
       // Atualizar lista de produtos
       const produtosAtualizados = await ProdutosAPI.getAll();
-      setProdutos(produtosAtualizados || []);
+      if (produtosAtualizados.success) {
+        setProdutos(produtosAtualizados.data || []);
+      }
       
       // Atualizar lista de pedidos
-      const pedidosAtualizados = await PedidosAPI.getByLoja(currentUser.id);
-      setPedidos(pedidosAtualizados || []);
+      const pedidosAtualizados = await PedidosAPI.getByLoja(currentProfile.id);
+      if (pedidosAtualizados.success) {
+        setPedidos(pedidosAtualizados.data || []);
+      }
       
       setCarrinho([]);
       setCurrentPage('meusPedidos');
@@ -764,7 +773,7 @@ const CentralCompras = () => {
         case 'loja':
           const meusPedidos = pedidos.filter(p => p.lojaId === currentUser?.id);
           return [
-            { label: 'Produtos Disponíveis', value: produtos.reduce((s, p) => s + (p.estoque || 0), 0), icon: '📦', color: '#5B7FFF' },
+            { label: 'Produtos Disponíveis', value: produtos.reduce((s, p) => s + (p.quantidade_estoque || 0), 0), icon: '📦', color: '#5B7FFF' },
             { label: 'Pedidos Realizados', value: meusPedidos.filter(p => p.status === 'Aprovado').length, icon: '✅', color: '#4CAF50' },
             { label: 'Pedidos Pendentes', value: meusPedidos.filter(p => p.status === 'Pendente').length, icon: '⏳', color: '#FF9800' },
             { label: 'Valor Total', value: formatCurrency(meusPedidos.reduce((s, p) => s + (p.total || 0), 0)), icon: '💰', color: '#00BCD4' }
@@ -1162,13 +1171,7 @@ const CentralCompras = () => {
               <select defaultValue="">
                 <option value="">Todos Fornecedores</option>
                 {[...new Set(produtos.map(p => p.fornecedor))].map(fornecedor => (
-                  <option key={fornecedor} value={fornecedor}>{fornecedor}</option>
-                ))}
-              </select>
-              <select defaultValue="">
-                <option value="">Todas Categorias</option>
-                {[...new Set(produtos.map(p => p.categoria))].map(categoria => (
-                  <option key={categoria} value={categoria}>{categoria}</option>
+                  <option key={fornecedor.id_fornecedor} value={fornecedor.id_fornecedor}>{fornecedor.nome_fornecedor}</option>
                 ))}
               </select>
             </div>
@@ -1180,11 +1183,10 @@ const CentralCompras = () => {
                 </div>
               ) : (
                 produtos.map(produto => (
-                  <div key={produto.id} className="produto-item">
+                  <div key={produto.id_produto} className="produto-item">
                     <h4>{produto.nome}</h4>
-                    <p><strong>Fornecedor:</strong> {produto.fornecedor}</p>
-                    <p><strong>Categoria:</strong> {produto.categoria}</p>
-                    <p><strong>Estoque:</strong> {produto.estoque}</p>
+                    <p><strong>Fornecedor:</strong> {produto.fornecedor.nome_fornecedor}</p>
+                    <p><strong>Estoque:</strong> {produto.quantidade_estoque}</p>
                     <div className="preco">{formatCurrency(produto.preco)}</div>
                     <button onClick={() => handleAddToCart(produto)}>
                       <i className="fas fa-cart-plus"></i> Adicionar
@@ -1193,63 +1195,147 @@ const CentralCompras = () => {
                 ))
               )}
             </div>
-          </div>
 
-          {/* CARRINHO (DIREITA) */}
-          <div className="carrinho-section">
-            <h3><i className="fas fa-shopping-cart"></i> Carrinho ({carrinho.length})</h3>
-            <div id="carrinhoItensPedido" className="carrinho-itens">
-              {carrinho.length === 0 ? (
-                <div className="carrinho-vazio">Carrinho vazio</div>
-              ) : (
-                carrinho.map(item => (
-                  <div key={item.id} className="carrinho-item">
-                    <div className="carrinho-item-info">
-                      <h4>{item.nome}</h4>
-                      <p>{item.fornecedor} - {formatCurrency(item.preco)}</p>
+            {/* CARRINHO (DIREITA) */}
+            <div className="carrinho-section">
+              <h3><i className="fas fa-shopping-cart"></i> Carrinho ({carrinho.length})</h3>
+              <div id="carrinhoItensPedido" className="carrinho-itens">
+                {carrinho.length === 0 ? (
+                  <div className="carrinho-vazio">Carrinho vazio</div>
+                ) : (
+                  carrinho.map(item => (
+                    <div key={item.id_produto} className="carrinho-item">
+                      <div className="carrinho-item-info">
+                        <h4>{item.nome}</h4>
+                        <p>{item.fornecedor.nome_fornecedor} - {formatCurrency(item.preco)}</p>
+                      </div>
+                      <div className="carrinho-item-controles">
+                        <button onClick={() => handleUpdateCartQuantity(item.id, -1)}>-</button>
+                        <span className="carrinho-item-quantidade">{item.quantidade}</span>
+                        <button onClick={() => handleUpdateCartQuantity(item.id, 1)}>+</button>
+                        <span className="carrinho-item-total">
+                          {formatCurrency(item.preco * item.quantidade)}
+                        </span>
+                        <button 
+                          className="btn-delete" 
+                          onClick={() => handleRemoveFromCart(item.id)}
+                          style={{ marginLeft: '10px' }}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </div>
                     </div>
-                    <div className="carrinho-item-controles">
-                      <button onClick={() => handleUpdateCartQuantity(item.id, -1)}>-</button>
-                      <span className="carrinho-item-quantidade">{item.quantidade}</span>
-                      <button onClick={() => handleUpdateCartQuantity(item.id, 1)}>+</button>
-                      <span className="carrinho-item-total">
-                        {formatCurrency(item.preco * item.quantidade)}
-                      </span>
-                      <button 
-                        className="btn-delete" 
-                        onClick={() => handleRemoveFromCart(item.id)}
-                        style={{ marginLeft: '10px' }}
-                      >
-                        <i className="fas fa-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="carrinho-footer">
-              <strong>Total:</strong>
-              <span id="totalCarrinhoPedido">{formatCurrency(totalCarrinho)}</span>
-              <button 
-                className="btn-primary" 
-                onClick={handleFinalizarPedido}
-                disabled={carrinho.length === 0 || loading}
-              >
-                {loading ? 'Processando...' : 'Finalizar Pedido'}
-              </button>
+                  ))
+                )}
+              </div>
+              <div className="carrinho-footer">
+                <strong>Total:</strong>
+                <span id="totalCarrinhoPedido">{formatCurrency(totalCarrinho)}</span>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleFinalizarPedido}
+                  disabled={carrinho.length === 0 || loading}
+                >
+                  {loading ? 'Processando...' : 'Finalizar Pedido'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    );
+    )
   };
 
-  const renderMeusPedidos = () => {
-    const meusPedidos = pedidos.filter(p => p.lojaId === currentUser?.id);
-    
+  const renderPedidosRecebidos = () => {
+
+    const handleApprovePedido = async (pedidoId) => {
+      if (!confirm('Deseja aprovar este pedido?')) return;
+
+      await PedidosAPI.updateStatus(pedidoId, 'aprovado');
+      setPedidos(pedidosRecebidos.map(p =>
+        p.id_pedido === pedidoId ? { ...p, status: 'aprovado' } : p
+      ));
+      alert('Pedido aprovado com sucesso!');
+    };
+
     const getStatusClass = (status) => {
       switch(status) {
-        case 'Pendente': return 'status-pendente';
+        case 'pendente': return 'status-pendente';
+        case 'aprovado': return 'status-aprovado';
+        case 'Separado': return 'status-separado';
+        case 'Enviado': return 'status-enviado';
+        case 'Entregue': return 'status-entregue';
+        case 'Cancelado': return 'status-cancelado';
+        default: return '';
+      }
+    };
+
+    return (
+      <div id="pedidosRecebidos" className={`page ${currentPage === 'pedidosRecebidos' ? 'active' : ''}`}>
+        <div className="page-header">
+          <h1>Pedidos Recebidos</h1>
+          <p>Gerencie os pedidos recebidos</p>
+        </div>
+
+        <div className="page-toolbar">
+          <div className="search-box">
+            <input type="text" placeholder="Buscar pedidos" />
+          </div>
+        </div>
+
+        <table className="data-table" id="pedidosRecebidosTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Loja</th>
+              <th>Data</th>
+              <th>Status</th>
+              <th>Total</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pedidosRecebidos.length === 0 ? (
+              <tr>
+                <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: '#999' }}>
+                  Nenhum pedido recebido.
+                </td>
+              </tr>
+            ) : (
+              pedidosRecebidos.map(p => (
+                <tr key={p.id_pedido}>
+                  <td>#{p.id_pedido}</td>
+                  <td>{p.loja_nome || ''}</td>
+                  <td>{formatDate(p.criado_em.split('T')[0])}</td>
+                  <td>
+                    <span className={`status-badge ${getStatusClass(p.status)}`}>
+                      {p.status}
+                    </span>
+                  </td>
+                  <td>{formatCurrency(p.total)}</td>
+                  <td>
+                    <div className="action-buttons">
+                      <button className="btn-edit">Detalhes</button>
+                      {p.status === 'pendente' && (
+                        <button className="btn-primary" onClick={() => handleApprovePedido(p.id_pedido)}>Aprovar</button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  const renderMeusPedidos = () => {
+    const meusPedidos = pedidos.filter(p => p.loja_id === currentProfile?.id);
+
+    const getStatusClass = (status) => {
+      switch(status) {
+        case 'pendente': return 'status-pendente';
         case 'Aprovado': return 'status-aprovado';
         case 'Separado': return 'status-separado';
         case 'Enviado': return 'status-enviado';
@@ -1291,9 +1377,9 @@ const CentralCompras = () => {
               </tr>
             ) : (
               meusPedidos.map(p => (
-                <tr key={p.id}>
-                  <td>#{p.id}</td>
-                  <td>{formatDate(p.data)}</td>
+                <tr key={p.id_pedido}>
+                  <td>#{p.id_pedido}</td>
+                  <td>{formatDate(p.criado_em.split('T')[0])}</td>
                   <td>
                     <span className={`status-badge ${getStatusClass(p.status)}`}>
                       {p.status}
@@ -1875,6 +1961,7 @@ const CentralCompras = () => {
           {currentPage === 'condicoes' && renderCondicoes()}
           {currentPage === 'realizarPedido' && renderRealizarPedido()}
           {currentPage === 'meusPedidos' && renderMeusPedidos()}
+          {currentPage === 'pedidosRecebidos' && renderPedidosRecebidos()}
           {/* Adicione outras páginas conforme necessário */}
         </main>
       </div>

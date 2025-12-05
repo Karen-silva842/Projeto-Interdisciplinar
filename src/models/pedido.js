@@ -4,25 +4,22 @@ class Pedido {
   static async criar(pedidoData) {
     const {
       loja_id,
-      fornecedor_id,
       itens,
-      valor_total,
-      condicao_comercial_id
+      total: valor_total,
     } = pedidoData;
 
-    const client = await db.connect();
     try {
-      await client.query('BEGIN');
+      await db.query('BEGIN');
 
       const pedidoQuery = `
         INSERT INTO pedidos (
-          loja_id, fornecedor_id, valor_total, condicao_comercial_id, status, criado_em
-        ) VALUES ($1, $2, $3, $4, 'pendente', NOW())
+          loja_id, valor_total, status, criado_em
+        ) VALUES ($1, $2, 'pendente', NOW())
         RETURNING *
       `;
 
-      const pedidoResult = await client.query(pedidoQuery, [
-        loja_id, fornecedor_id, valor_total, condicao_comercial_id
+      const pedidoResult = await db.query(pedidoQuery, [
+        loja_id, valor_total
       ]);
 
       const pedido = pedidoResult.rows[0];
@@ -30,28 +27,25 @@ class Pedido {
       for (const item of itens) {
         const itemQuery = `
           INSERT INTO itens_pedido (
-            pedido_id, produto_id, quantidade, preco_unitario, valor_total
-          ) VALUES ($1, $2, $3, $4, $5)
+            pedido_id, produto_id, quantidade, preco_unitario
+          ) VALUES ($1, $2, $3, $4)
         `;
 
-        await client.query(itemQuery, [
-          pedido.id_pedido,      // CORRIGIDO
+        await db.query(itemQuery, [
+          pedido.id_pedido,
           item.produto_id,
           item.quantidade,
-          item.preco_unitario,
-          item.valor_total
+          item.preco,
         ]);
       }
 
-      await client.query('COMMIT');
+      await db.query('COMMIT');
       return pedido;
 
     } catch (error) {
-      await client.query('ROLLBACK');
+      await db.query('ROLLBACK');
       throw error;
 
-    } finally {
-      client.release();
     }
   }
 
@@ -59,14 +53,12 @@ class Pedido {
     const query = `
       SELECT 
         p.*, 
-        f.nome AS fornecedor_nome,
-        COUNT(ip.id) AS quantidade_itens
+        COUNT(ip.id_itens) AS quantidade_itens
       FROM pedidos p
-      JOIN fornecedores f ON p.fornecedor_id = f.id
       LEFT JOIN itens_pedido ip ON p.id_pedido = ip.pedido_id
       WHERE p.loja_id = $1
-      GROUP BY p.id_pedido, f.nome
-      ORDER BY p.criado_em DESC
+      GROUP BY p.id_pedido
+      ORDER BY p.id_pedido DESC
     `;
     const result = await db.query(query, [lojaId]);
     return result.rows;
@@ -77,11 +69,12 @@ class Pedido {
       SELECT 
         p.*, 
         l.nome AS loja_nome,
-        COUNT(ip.id) AS quantidade_itens
+        COUNT(ip.id_itens) AS quantidade_itens
       FROM pedidos p
-      JOIN lojas l ON p.loja_id = l.id_loja
-      LEFT JOIN itens_pedido ip ON p.id_pedido = ip.pedido_id
-      WHERE p.fornecedor_id = $1
+      JOIN lojas l ON p.loja_id = l.id
+      JOIN itens_pedido ip ON p.id_pedido = ip.pedido_id
+      JOIN produtos pr ON ip.produto_id = pr.id_produto
+      WHERE pr.fornecedor_id = $1
       GROUP BY p.id_pedido, l.nome
       ORDER BY p.criado_em DESC
     `;
@@ -110,7 +103,8 @@ class Pedido {
       'separado',
       'enviado',
       'entregue',
-      'cancelado'
+      'cancelado',
+      'aprovado'
     ];
 
     if (!statusPermitidos.includes(status)) {
@@ -119,7 +113,7 @@ class Pedido {
 
     const query = `
       UPDATE pedidos 
-      SET status = $1, atualizado_em = NOW()
+      SET status = $1
       WHERE id_pedido = $2
       RETURNING *
     `;

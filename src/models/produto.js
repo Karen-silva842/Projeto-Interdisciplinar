@@ -86,10 +86,9 @@ class Produto {
       'nome',
       'descricao',
       'preco',
-      'imagem_url',
-      'sku',
+      'quantidade_estoque',
+      'status',
       'fornecedor_id',
-      'categoria_id'
     ];
 
     const setClause = [];
@@ -112,7 +111,7 @@ class Produto {
 
     const query = `
       UPDATE produtos
-      SET ${setClause.join(', ')}, atualizado_em = NOW()
+      SET ${setClause.join(', ')}
       WHERE id_produto = $${contador}
       RETURNING *
     `;

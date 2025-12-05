@@ -83,4 +83,6 @@ router.get('/fornecedor', authMiddleware, ProdutosController.buscarPorFornecedor
  */
 router.get('/:id', ProdutosController.buscarPorId);
 
+router.put('/:id', ProdutosController.atualizarProduto);
+
 module.exports = router;

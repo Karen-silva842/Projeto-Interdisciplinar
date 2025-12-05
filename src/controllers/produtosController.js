@@ -124,6 +124,33 @@ class ProdutosController {
       });
     }
   }
+
+  static async atualizarProduto(req, res) {
+    try {
+      const { id } = req.params;
+      const dadosAtualizados = req.body;
+
+      const produtoAtualizado = await Produto.atualizar(id, dadosAtualizados);
+
+      if (!produtoAtualizado) {
+        return res.status(404).json({
+          success: false,
+          message: 'Produto não encontrado'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: produtoAtualizado
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Erro ao atualizar produto',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = ProdutosController;

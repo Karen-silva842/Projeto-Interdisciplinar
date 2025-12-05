@@ -78,4 +78,12 @@ router.get('/:id/itens', PedidosController.buscarItensPedido);
  */
 router.get('/:id/detalhes', PedidosController.detalhesPedido);
 
+router.post('/', PedidosController.criarPedido);
+
+router.get('/loja/:lojaId', PedidosController.getByLoja);
+
+router.get('/fornecedor', PedidosController.buscarPorFornecedor);
+
+router.patch('/:id/status', PedidosController.atualizarStatusPedido);
+
 module.exports = router;

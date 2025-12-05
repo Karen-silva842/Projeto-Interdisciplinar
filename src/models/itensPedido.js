@@ -6,9 +6,7 @@ class ItensPedido {
     const query = `
       SELECT 
         ip.*, 
-        p.nome AS produto_nome,
-        p.sku,
-        p.imagem_url
+        p.nome AS produto_nome
       FROM itens_pedido ip
       JOIN produtos p ON ip.produto_id = p.id_produto
       WHERE ip.pedido_id = $1
