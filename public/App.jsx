@@ -202,15 +202,12 @@ const CentralCompras = () => {
       { id: 'dashboard', label: 'Dashboard', icon: '📊' },
       { id: 'realizarPedido', label: 'Realizar Pedido', icon: '🛒' },
       { id: 'meusPedidos', label: 'Meus Pedidos', icon: '📋' },
-      { id: 'catalogoProdutos', label: 'Catálogo', icon: '📦' },
-      { id: 'meusDados', label: 'Meus Dados', icon: '👤' }
     ],
     fornecedor: [
       { id: 'dashboard', label: 'Dashboard', icon: '📊' },
       { id: 'pedidosRecebidos', label: 'Pedidos Recebidos', icon: '📥' },
       { id: 'produtos', label: 'Meus Produtos', icon: '📦' },
       { id: 'campanhas', label: 'Campanhas', icon: '📢' },
-      { id: 'condicoes', label: 'Condições', icon: '⚙️' }
     ]
   };
 
